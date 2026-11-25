@@ -54,8 +54,9 @@ export async function checkRateLimit(
     .order("created_at", { ascending: true })
     .limit(limit);
   if (error) {
-    console.error("[sg-guard] rate check failed", error.message);
-    return { ok: true };
+    // Fail closed: if the limit cannot be checked, no provider quota is spent.
+    console.error("[sg-guard] rate check failed; rejecting request", error.message);
+    return { ok: false, retryAfterSec: RATE_CHECK_FAILED_RETRY_SEC };
   }
   if ((data?.length ?? 0) >= limit) {
     const oldest = new Date(data![0]!.created_at).getTime();
@@ -64,8 +65,40 @@ export async function checkRateLimit(
       retryAfterSec: Math.max(1, Math.ceil((oldest + HOUR_MS - Date.now()) / 1000)),
     };
   }
-  await db.from("rate_events").insert({ ip_hash: ipHash, kind });
+  const { error: insertError } = await db.from("rate_events").insert({ ip_hash: ipHash, kind });
+  if (insertError) {
+    console.error("[sg-guard] rate event not recorded; rejecting request", insertError.message);
+    return { ok: false, retryAfterSec: RATE_CHECK_FAILED_RETRY_SEC };
+  }
   return { ok: true };
+}
+
+const RATE_CHECK_FAILED_RETRY_SEC = 60;
+
+/**
+ * Rate-limit key for a client address. IPv4 is used as is. IPv6 is reduced to its /64 network,
+ * because one ordinary connection controls billions of addresses inside it and could otherwise
+ * get a fresh allowance on every request. IPv4-mapped IPv6 maps back to the IPv4 address.
+ */
+export function rateKey(ip: string): string {
+  if (!ip.includes(":")) return ip;
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (mapped) return mapped[1]!;
+
+  const halves = ip.split("::");
+  if (halves.length > 2) return ip;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const tail = halves[1] ? halves[1].split(":") : [];
+  const gap = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  if (gap < 0) return ip;
+  const groups = [...head, ...Array<string>(gap).fill("0"), ...tail];
+  if (groups.length !== 8) return ip;
+
+  const normalized = groups.map((g) =>
+    /^[0-9a-f]{1,4}$/i.test(g) ? parseInt(g, 16).toString(16) : null,
+  );
+  if (normalized.some((g) => g === null)) return ip;
+  return `${normalized.slice(0, 4).join(":")}::/64`;
 }
 
 export async function getCached<T>(
@@ -126,6 +159,15 @@ export async function recordProviderUse(provider: string) {
   await db.from("provider_usage").insert({ provider });
 }
 
+/** Hostnames a Turnstile token may come from. Set TURNSTILE_HOSTNAMES (comma separated) for a custom domain. */
+function allowedHostnames(): string[] {
+  const configured = process.env["TURNSTILE_HOSTNAMES"];
+  return (configured ?? "sentinelgrid.erikkasunic.workers.dev")
+    .split(",")
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export async function verifyTurnstile(token: string | undefined, ip: string): Promise<boolean> {
   const secret = process.env["TURNSTILE_SECRET_KEY"];
   if (!secret) {
@@ -146,8 +188,14 @@ export async function verifyTurnstile(token: string | undefined, ip: string): Pr
       body,
       signal: AbortSignal.timeout(6000),
     });
-    const json = (await res.json()) as { success?: boolean };
-    return json.success === true;
+    const json = (await res.json()) as { success?: boolean; hostname?: string };
+    if (json.success !== true) return false;
+    // A token solved on some other site must not be accepted here.
+    if (isProduction() && !allowedHostnames().includes(json.hostname ?? "")) {
+      console.error("[sg-guard] turnstile token from unexpected hostname");
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }

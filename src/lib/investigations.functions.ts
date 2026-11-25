@@ -41,7 +41,7 @@ export const investigateTarget = createServerFn({ method: "POST" })
         turnstileFailed: true,
       };
     }
-    const ipHash = await guard.hashIp(ip);
+    const ipHash = await guard.hashIp(guard.rateKey(ip));
 
     const limited = (sec: number) => {
       setResponseStatus(429);
