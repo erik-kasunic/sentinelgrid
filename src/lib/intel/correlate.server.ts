@@ -6,10 +6,19 @@ import type { Evidence, Ioc, Recommendation, Relationship, RiskScore, TargetType
 
 const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3, info: 4 } as const;
 
+// Providers disagree on host name form ("A.com." vs "a.com"); compare them as one node.
+const normalizeHost = (value: string, type: string) =>
+  type === "domain" ? value.toLowerCase().replace(/\.$/, "") : value;
+
 export function dedupeRelationships(relationships: Relationship[]): Relationship[] {
   // Same link from several providers: keep one edge, list every source.
   const byKey = new Map<string, Relationship>();
-  for (const rel of relationships) {
+  for (const raw of relationships) {
+    const rel = {
+      ...raw,
+      fromValue: normalizeHost(raw.fromValue, raw.fromType),
+      toValue: normalizeHost(raw.toValue, raw.toType),
+    };
     if (rel.fromValue === rel.toValue) continue;
     const key = `${rel.fromValue}|${rel.kind}|${rel.toValue}`;
     const prev = byKey.get(key);

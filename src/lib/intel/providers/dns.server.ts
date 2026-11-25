@@ -2,7 +2,7 @@ import { fetchJson, nowIso } from "../http.server";
 import type { Evidence, Relationship } from "../types";
 import type { Provider, ProviderContext, ProviderOutput } from "./provider.server";
 
-interface DohAnswer {
+export interface DohAnswer {
   name: string;
   type: number;
   data: string;
@@ -14,14 +14,34 @@ interface DohResponse {
 }
 
 const RECORD_TYPES = ["A", "AAAA", "MX", "NS", "TXT", "CNAME"] as const;
+type RecordType = (typeof RECORD_TYPES)[number];
 
-async function resolve(name: string, type: string): Promise<string[]> {
+// DNS wire type codes (RFC 1035 / RFC 3596).
+const TYPE_CODE: Record<RecordType, number> = { A: 1, NS: 2, CNAME: 5, MX: 15, TXT: 16, AAAA: 28 };
+
+/** Strip the root dot DNS returns on host names, so "a.com." and "a.com" are the same node. */
+export const stripRootDot = (host: string) => host.replace(/\.$/, "");
+
+/**
+ * Keep only answers of the requested type. A resolver follows CNAMEs, so a query for A on an
+ * alias also returns the CNAME record itself; without this filter the alias target would be
+ * shown as an A/MX/NS/TXT record and treated as an IP.
+ */
+export function parseAnswers(type: RecordType, answers: DohAnswer[] | undefined): string[] {
+  if (!answers) return [];
+  return answers
+    .filter((a) => a.type === TYPE_CODE[type])
+    .map((a) => a.data.replace(/^"|"$/g, ""))
+    .map((v) => (type === "TXT" ? v : stripRootDot(v)))
+    .filter(Boolean);
+}
+
+async function resolve(name: string, type: RecordType): Promise<string[]> {
   const data = await fetchJson<DohResponse>(
     `https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`,
     { timeoutMs: 6000 },
   );
-  if (!data.Answer) return [];
-  return data.Answer.map((a) => a.data.replace(/^"|"$/g, "")).filter(Boolean);
+  return parseAnswers(type, data.Answer);
 }
 
 export const dnsProvider: Provider = {
@@ -60,7 +80,7 @@ export const dnsProvider: Provider = {
         });
       }
       if (record.type === "CNAME" || record.type === "MX" || record.type === "NS") {
-        const host = record.value.replace(/^\d+\s+/, "").replace(/\.$/, "");
+        const host = stripRootDot(record.value.replace(/^\d+\s+/, ""));
         if (host) {
           relationships.push({
             fromValue: domain,
