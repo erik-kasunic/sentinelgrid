@@ -67,6 +67,16 @@ export function ResultView({ result }: { result: InvestigationResult }) {
 
   const related = result.iocs.filter((ioc) => !ioc.primary);
 
+  const onDownloadPdf = async () => {
+    try {
+      const { downloadPdfReport } = await import("@/lib/intel/pdf-report");
+      await downloadPdfReport(result);
+    } catch (e) {
+      console.error(e);
+      toast.error("Could not build the PDF.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
@@ -84,10 +94,18 @@ export function ResultView({ result }: { result: InvestigationResult }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => downloadReport(result)}
+            onClick={() => void onDownloadPdf()}
             className="font-mono text-xs"
           >
-            <Download className="size-3.5" /> Report
+            <Download className="size-3.5" /> Report (PDF)
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => downloadReport(result)}
+            className="font-mono text-xs text-muted-foreground"
+          >
+            Markdown
           </Button>
           {signedIn && caseId && <FolderPicker caseId={caseId} />}
           {signedIn ? (
