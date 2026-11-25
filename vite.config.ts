@@ -36,7 +36,11 @@ export default defineConfig(({ command, mode }) => {
         ? [
             nitro({
               preset: "cloudflare-module",
-              cloudflare: { nodeCompat: true, deployConfig: true },
+              cloudflare: {
+                nodeCompat: true,
+                deployConfig: true,
+                wrangler: { name: "sentinelgrid" },
+              },
             }),
           ]
         : []),
