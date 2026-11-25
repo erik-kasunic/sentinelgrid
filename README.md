@@ -4,6 +4,18 @@
 
 **Live:** https://sentinelgrid.erikkasunic.workers.dev
 
+### Try it
+
+Paste one of these into the live app. SentinelGrid never contacts the target, so investigating them is safe.
+
+| Indicator                                                          | Type    | What it is                                                                                                                                                                            |
+| ------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `8.8.8.8`                                                          | IP      | **Benign.** Google Public DNS. Expect SAFE.                                                                                                                                           |
+| `275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f` | SHA-256 | **Malicious (test).** The [EICAR](https://www.eicar.org/download-anti-malware-testfile/) anti-malware test file, the industry standard sample that antivirus engines flag on purpose. |
+| `http://malware.wicar.org/data/eicar.com`                          | URL     | **Malicious (test).** [WICAR](https://www.wicar.org/), a test site built to trigger web security tools. Expect HIGH.                                                                  |
+
+> **Warning:** the URL is listed as malicious by security vendors. Investigate it in SentinelGrid only. Do not open it in a browser.
+
 VirusTotal tells you what is known about an indicator. SentinelGrid turns scattered intelligence into an investigation: evidence, relationships, a verdict and what to do next.
 
 ## Features
