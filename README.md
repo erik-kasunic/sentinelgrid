@@ -22,14 +22,15 @@ VirusTotal tells you what is known about an indicator. SentinelGrid turns scatte
 ## Features
 
 - **Auto-detecting input**: IPs, domains, URLs and SHA-256/SHA-1/MD5 hashes. Messy free text is reduced to one indicator.
-- **Parallel enrichment** from 10 intelligence sources plus local heuristics, with automatic pivoting (a domain resolves to its IP, so IP-only sources run too).
+- **Parallel enrichment** from 12 intelligence sources (including local heuristics), with automatic pivoting (a domain resolves to its IP, so IP-only sources run too).
 - **Deterministic risk score (0-100)** with a line-by-line breakdown. The same evidence always gives the same score.
 - **Relationship graph** linking domains, IPs, ASNs and file hashes.
 - **Geolocation map** and infrastructure details: ASN, WHOIS/RDAP, DNS, open ports.
 - **AI analyst summary** that explains the evidence in plain language. It never changes the score.
 - **Case management**: signed-in users get every investigation saved as a case, organized in folders.
 - **PDF incident reports** for handing off findings.
-- **Local-only tools**: file hashing and image EXIF/GPS extraction run in the browser. Files never leave the device.
+- **Image analysis**: read EXIF metadata from a photo (camera, timestamps, GPS) and see where it was taken on a map. It runs entirely in the browser, so the image never leaves your device.
+- **Local-only file hashing**: compute a file's SHA-256 in the browser and investigate it without uploading the file.
 
 ## How an investigation works
 
