@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/sg/app-shell";
 import { TerminalLabel } from "@/components/sg/chrome";
+import { Turnstile } from "@/components/sg/turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,10 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  // Supabase Auth verifies this Turnstile token (Attack Protection > CAPTCHA). Tokens are
+  // single-use, so the widget is reset after every attempt.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   useEffect(() => {
     if (!loading && signedIn) void navigate({ to: "/investigations" });
@@ -44,10 +49,19 @@ function AuthPage() {
       toast.error("Password is too long — use at most 72 characters.");
       return;
     }
+    if (!captchaToken) {
+      toast.error("Wait for the bot check to finish.");
+      return;
+    }
+    const captcha = captchaToken;
     setBusy(true);
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+          options: { captchaToken: captcha },
+        });
         if (error) {
           toast.error(
             error.message === "Invalid login credentials"
@@ -61,7 +75,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: window.location.origin, captchaToken: captcha },
         });
         if (error) {
           toast.error(error.message);
@@ -74,6 +88,7 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
+          captchaToken: captcha,
         });
         if (error) {
           toast.error(error.message);
@@ -84,6 +99,7 @@ function AuthPage() {
       }
     } finally {
       setBusy(false);
+      setCaptchaReset((n) => n + 1);
     }
   };
 
@@ -151,7 +167,12 @@ function AuthPage() {
               )}
             </div>
           )}
-          <Button type="submit" disabled={busy} className="w-full font-mono text-xs">
+          <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
+          <Button
+            type="submit"
+            disabled={busy || !captchaToken}
+            className="w-full font-mono text-xs"
+          >
             {busy ? "WORKING…" : cta}
           </Button>
           <button
