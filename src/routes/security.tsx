@@ -52,6 +52,14 @@ const ITEMS = [
     "Privacy",
     "Your IP is stored only as a salted hash for rate limiting. Saved cases are visible only to you.",
   ],
+  [
+    "Personal data",
+    "If you create an account, SentinelGrid stores your email address and a password hash (handled by Supabase Auth) plus the cases you choose to save. Nothing is sold or shared, and indicators you search are sent only to the listed intelligence providers. Searches without an account store no personal data beyond the hashed IP, which is used for rate limiting.",
+  ],
+  [
+    "Your rights and contact",
+    "You can ask to see or delete your account and saved cases at any time. The controller is Erik Kasunić. Contact via https://github.com/erik-kasunic/sentinelgrid/issues.",
+  ],
 ] as const;
 
 function SecurityPage() {
