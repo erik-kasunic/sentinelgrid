@@ -130,7 +130,13 @@ export function computeScore(
     infraPoints += 4;
     infraReasons.push(`registry status ${infra.suspiciousDomainStatus.join("/")}`);
   }
-  if (infra.hostingProvider && !(typeof ageDays === "number" && ageDays >= 365)) {
+  // Datacenter/CDN hosting is normal (8.8.8.8, Cloudflare, AWS), so it only adds
+  // weight when another source already flags the indicator.
+  const corroborated =
+    (vt?.malicious ?? 0) > 0 ||
+    (signals.abuseipdb?.confidence ?? 0) >= 25 ||
+    signals.knownMalicious.length > 0;
+  if (infra.hostingProvider && corroborated && !(typeof ageDays === "number" && ageDays >= 365)) {
     infraPoints += 3;
     infraReasons.push("hosting/datacenter range");
   }
@@ -279,6 +285,8 @@ export function computeScore(
   };
 }
 
+const INFRA_PROVIDERS = ["dns", "rdap", "geoip", "shodan", "censys"];
+
 export function buildDimensions(
   score: RiskScore,
   signals: MergedSignals,
@@ -297,21 +305,27 @@ export function buildDimensions(
           : `${score.total}/100 from reputation and abuse evidence.`,
   };
 
-  const infraAnswered = providerStatus.some(
-    (p) => ["dns", "rdap", "geoip"].includes(p.provider) && p.status === "completed",
-  );
-  const infraFlagged =
+  // AbuseIPDB reports the usage type (hosting/datacenter), so it counts as an
+  // infrastructure answer too. Otherwise an IP whose GeoIP lookup failed showed
+  // UNKNOWN here while the score still added infrastructure points.
+  const infraAnswered =
+    providerStatus.some((p) => INFRA_PROVIDERS.includes(p.provider) && p.status === "completed") ||
+    signals.infrastructure.hostingProvider !== undefined;
+  const infraStrong =
     Boolean(signals.infrastructure.suspiciousDomainStatus?.length) ||
     (typeof signals.infrastructure.domainAgeDays === "number" &&
       signals.infrastructure.domainAgeDays < 30);
+  const infraScored = score.lines.some((l) => l.category === "infrastructure" && l.points > 0);
   const infrastructure: Dimension = {
     name: "INFRASTRUCTURE",
-    state: !infraAnswered ? "unknown" : infraFlagged ? "medium" : "safe",
+    state: !infraAnswered ? "unknown" : infraStrong ? "medium" : infraScored ? "low" : "safe",
     note: !infraAnswered
       ? "No infrastructure source answered."
-      : infraFlagged
+      : infraStrong
         ? "Hosting or registration details include noteworthy signals."
-        : "Hosting and registration details look ordinary.",
+        : infraScored
+          ? "Hosted in a datacenter or CDN range, alongside other risk evidence."
+          : "Hosting and registration details look ordinary.",
   };
 
   const malwareDimension: Dimension =

@@ -82,6 +82,15 @@ npm install
 npm run dev
 ```
 
+Checks (the same ones CI runs on every push):
+
+```bash
+npm run lint
+npm run typecheck
+npm test        # scoring engine unit tests
+npm run build
+```
+
 Server-side environment variables. Providers without a key are skipped and marked `not_configured`. DNS, RDAP, GeoIP and Shodan InternetDB need no key.
 
 | Variable                                                                     | Used for                            |
