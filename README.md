@@ -42,7 +42,7 @@ input -> classify -> normalize -> extract IOCs -> parallel enrichment -> correla
 | Category       | Sources                                                                                        |
 | -------------- | ---------------------------------------------------------------------------------------------- |
 | Reputation     | VirusTotal, AbuseIPDB, URLhaus, urlscan.io                                                     |
-| Infrastructure | DNS over HTTPS, RDAP/WHOIS, GeoIP                                                              |
+| Infrastructure | DNS over HTTPS, RDAP/WHOIS, GeoIP (ipwho.is with RIPEstat fallback)                            |
 | Exposure       | Shodan InternetDB, Censys                                                                      |
 | Organization   | Hunter.io (aggregate data only, no individual addresses)                                       |
 | Heuristics     | High-abuse TLDs, random-looking domains, raw IP hosts, non-standard ports, dropper-style paths |
