@@ -16,6 +16,13 @@ function scoreTone(band: Verdict) {
   return "text-primary";
 }
 
+function bannerTone(band: Verdict) {
+  if (band === "critical" || band === "high") return "border-destructive/50 bg-destructive/10";
+  if (band === "medium") return "border-warning/50 bg-warning/10";
+  if (band === "unknown") return "border-border bg-muted/30";
+  return "border-primary/50 bg-primary/10";
+}
+
 function scoreLabel(band: Verdict) {
   if (band === "critical" || band === "high") return "BAD — high risk";
   if (band === "medium") return "CAUTION — medium risk";
@@ -43,9 +50,24 @@ export function ScorePanel({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div>
           <div className="flex flex-col items-center gap-1 py-2 text-center">
+            <div
+              className={cn(
+                "mb-3 w-full border px-4 py-3",
+                insufficient ? bannerTone("unknown") : bannerTone(score.band),
+              )}
+            >
+              <span
+                className={cn(
+                  "font-mono text-4xl leading-none font-bold tracking-[0.12em] uppercase sm:text-5xl",
+                  insufficient ? "text-muted-foreground" : scoreTone(score.band),
+                )}
+              >
+                {insufficient ? "unknown" : verdict}
+              </span>
+            </div>
             <span
               className={cn(
-                "font-mono text-7xl leading-none font-bold",
+                "font-mono text-5xl leading-none font-bold",
                 insufficient ? "text-muted-foreground" : scoreTone(score.band),
               )}
             >
