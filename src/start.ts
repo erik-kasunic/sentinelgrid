@@ -60,7 +60,23 @@ const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
 });
 
+// Refuse oversized request bodies before they are parsed. Every server function takes small
+// JSON (the largest is a saved case, capped at 512 KB in the database).
+const MAX_BODY_BYTES = 1_000_000;
+const bodyLimitMiddleware = createMiddleware().server(async ({ next, request }) => {
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (declared > MAX_BODY_BYTES) {
+    return new Response("Payload too large", { status: 413 });
+  }
+  return next();
+});
+
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [securityHeadersMiddleware, errorMiddleware, csrfMiddleware],
+  requestMiddleware: [
+    bodyLimitMiddleware,
+    securityHeadersMiddleware,
+    errorMiddleware,
+    csrfMiddleware,
+  ],
 }));
