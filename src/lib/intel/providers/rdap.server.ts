@@ -34,6 +34,27 @@ function eventDate(data: RdapResponse, action: string): string | undefined {
   return data.events?.find((e) => e.eventAction === action)?.eventDate;
 }
 
+/** Public RDAP bootstraps, tried in order; either one redirects to the registry that owns the domain. */
+const RDAP_ENDPOINTS = [
+  "https://rdap-bootstrap.arin.net/bootstrap/domain/",
+  "https://rdap.org/domain/",
+];
+
+async function lookup(domain: string): Promise<RdapResponse> {
+  let lastError: unknown;
+  for (const base of RDAP_ENDPOINTS) {
+    try {
+      return await fetchJson<RdapResponse>(`${base}${encodeURIComponent(domain)}`, {
+        timeoutMs: 9000,
+        headers: { "user-agent": "SentinelGrid/1.0 security-research" },
+      });
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
+
 export const rdapProvider: Provider = {
   name: "rdap",
   label: "RDAP",
@@ -43,13 +64,7 @@ export const rdapProvider: Provider = {
     const domain = ctx.domain;
     if (!domain) return {};
 
-    const data = await fetchJson<RdapResponse>(
-      `https://rdap-bootstrap.arin.net/bootstrap/domain/${encodeURIComponent(domain)}`,
-      {
-        timeoutMs: 9000,
-        headers: { "user-agent": "SentinelGrid/1.0 security-research" },
-      },
-    );
+    const data = await lookup(domain);
 
     const registrar = data.entities
       ?.filter((e) => e.roles?.includes("registrar"))
