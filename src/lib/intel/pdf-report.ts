@@ -135,6 +135,77 @@ export async function downloadPdfReport(r: InvestigationResult) {
     ],
   );
 
+  const infra = r.infrastructure;
+  if (infra && (infra.asn || infra.country || infra.registrar || infra.dnsRecords?.length)) {
+    heading("Infrastructure and location");
+    table(
+      ["Field", "Value"],
+      [
+        ...(infra.asn ? [["ASN", infra.asn]] : []),
+        ...(infra.isp ? [["ISP", infra.isp]] : []),
+        ...(infra.organization ? [["Organization", infra.organization]] : []),
+        ...(infra.usageType ? [["Usage type", infra.usageType]] : []),
+        ...(infra.country
+          ? [["Location", [infra.city, infra.region, infra.country].filter(Boolean).join(", ")]]
+          : []),
+        ...(infra.latitude !== undefined && infra.longitude !== undefined
+          ? [["Coordinates", `${infra.latitude.toFixed(4)}, ${infra.longitude.toFixed(4)}`]]
+          : []),
+        ...(infra.registrar ? [["Registrar", infra.registrar]] : []),
+        ...(infra.createdDate ? [["Registered", infra.createdDate]] : []),
+        ...(infra.expiresDate ? [["Expires", infra.expiresDate]] : []),
+        ...(infra.domainStatus?.length ? [["Domain status", infra.domainStatus.join(", ")]] : []),
+        ...(infra.nameservers?.length ? [["Nameservers", infra.nameservers.join(", ")]] : []),
+        ...(infra.dnsRecords ?? []).map((d) => [`DNS ${d.type}`, d.value]),
+      ],
+    );
+    if (infra.latitude !== undefined && infra.longitude !== undefined) {
+      const mapW = 300;
+      const mapH = mapW / 2;
+      if (y + mapH + 40 > 800) {
+        doc.addPage();
+        y = M;
+      }
+      doc.setFillColor(8, 12, 24).rect(M, y, mapW, mapH, "F");
+      doc.setDrawColor(30, 41, 59).setLineWidth(0.5);
+      for (let i = 1; i < 12; i++) doc.line(M + (mapW * i) / 12, y, M + (mapW * i) / 12, y + mapH);
+      for (let i = 1; i < 6; i++) doc.line(M, y + (mapH * i) / 6, M + mapW, y + (mapH * i) / 6);
+      doc.setDrawColor(51, 65, 85).line(M, y + mapH / 2, M + mapW, y + mapH / 2);
+      const px = M + ((infra.longitude + 180) / 360) * mapW;
+      const py = y + ((90 - infra.latitude) / 180) * mapH;
+      doc.setFillColor(...color).circle(px, py, 5, "F");
+      doc
+        .setDrawColor(...color)
+        .setLineWidth(1)
+        .circle(px, py, 10, "S");
+      doc
+        .setFont("helvetica", "normal")
+        .setFontSize(8)
+        .setTextColor(148, 163, 184)
+        .text(
+          t(
+            `Server location by IP geolocation (${infra.latitude.toFixed(2)}, ${infra.longitude.toFixed(2)}). Usually the provider's data center, not the exact building.`,
+          ),
+          M,
+          y + mapH + 12,
+        );
+      y += mapH + 36;
+    }
+  }
+
+  if (r.ai) {
+    heading("Analyst assessment");
+    if (r.ai.summary) para(r.ai.summary);
+    if (r.ai.explanation) para(r.ai.explanation);
+    if (r.ai.uncertainties.length) {
+      para(`Uncertainties: ${r.ai.uncertainties.join(" | ")}`, 9);
+    }
+    para(
+      `AI confidence ${Math.round(r.ai.confidence)}%. The AI explains the evidence; it never changes the score.`,
+      8,
+    );
+  }
+
   heading("Score breakdown");
   table(
     ["Rule", "Points", "Max"],
