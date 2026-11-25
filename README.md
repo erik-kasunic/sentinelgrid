@@ -2,6 +2,8 @@
 
 **A threat investigation platform for SOC analysts.** Paste an IP, domain, URL or file hash. SentinelGrid enriches it from multiple threat intelligence sources, correlates the findings and returns an explainable risk score with recommended next steps.
 
+**Live:** https://sentinelgrid.erikkasunic.workers.dev
+
 VirusTotal tells you what is known about an indicator. SentinelGrid turns scattered intelligence into an investigation: evidence, relationships, a verdict and what to do next.
 
 ## Features
