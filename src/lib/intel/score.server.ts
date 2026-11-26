@@ -45,6 +45,11 @@ const CAP = {
   other: 5,
 };
 
+/** Engines that must flag an indicator for the consensus floor to apply. */
+const CONSENSUS_MIN_ENGINES = 10;
+/** Minimum score (CRITICAL band) once consensus is reached. */
+const CONSENSUS_FLOOR = 80;
+
 export function bandFor(total: number): Verdict {
   if (total >= 80) return "critical";
   if (total >= 60) return "high";
@@ -236,6 +241,31 @@ export function computeScore(
       label: `Other evidence — ${otherReasons.join(", ")}`,
       points: Math.min(CAP.other, otherPoints),
       max: CAP.other,
+    });
+  }
+
+  // Consensus floor: when many engines independently agree an indicator is malicious, the
+  // verdict must not be diluted by sparse corroboration from other sources. Down-weighted
+  // outliers (a few flags on an old domain) never trigger it.
+  const consensusOutlier =
+    veteranDomain &&
+    vt !== undefined &&
+    vt.malicious <= 3 &&
+    vt.total > 0 &&
+    vt.malicious / vt.total < 0.05 &&
+    signals.knownMalicious.length === 0;
+  const rawTotal = lines.reduce((sum, line) => sum + line.points, 0);
+  if (
+    vt &&
+    vt.malicious >= CONSENSUS_MIN_ENGINES &&
+    !consensusOutlier &&
+    rawTotal < CONSENSUS_FLOOR
+  ) {
+    lines.push({
+      category: "virustotal",
+      label: `Consensus: ${vt.malicious} of ${vt.total} engines flag it malicious, raised to the CRITICAL minimum`,
+      points: CONSENSUS_FLOOR - rawTotal,
+      max: CONSENSUS_FLOOR - rawTotal,
     });
   }
 

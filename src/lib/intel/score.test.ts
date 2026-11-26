@@ -85,6 +85,26 @@ describe("computeScore", () => {
     expect(s.lines.find((l) => l.category === "virustotal")?.points).toBe(8);
   });
 
+  it("raises the score to CRITICAL when many engines agree", () => {
+    const { s } = score([vt(20, 93)], done("virustotal"));
+    expect(s.total).toBeGreaterThanOrEqual(80);
+    expect(s.band).toBe("critical");
+    expect(s.lines.reduce((sum, l) => sum + l.points, 0)).toBe(s.total);
+  });
+
+  it("does not apply the consensus floor to a handful of flags", () => {
+    const { s } = score([vt(5, 93)], done("virustotal"));
+    expect(s.total).toBeLessThan(80);
+  });
+
+  it("does not apply the consensus floor to down-weighted outliers", () => {
+    const { s } = score(
+      [vt(3, 93), { infrastructure: { domainAgeDays: 10 * 365 } }],
+      done("virustotal", "rdap", "dns"),
+    );
+    expect(s.total).toBeLessThan(80);
+  });
+
   it("marks the result insufficient when no reputation source answered", () => {
     const { s } = score([], [{ provider: "virustotal", status: "failed" }]);
     expect(s.basis).toBe("insufficient");
