@@ -40,18 +40,19 @@ export function AiPanel({
         </EmptyState>
       ) : (
         <div className="space-y-5">
-          <div className="space-y-2">
-            <TerminalLabel>Analyst explanation</TerminalLabel>
-            <p className={`text-sm leading-relaxed whitespace-pre-line ${tone.text} opacity-85`}>
-              {ai.explanation}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <TerminalLabel>Recommended action</TerminalLabel>
-            <p className={`border-l-2 pl-3 text-sm leading-relaxed ${tone.border} ${tone.text}`}>
-              {ai.recommended_action}
-            </p>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <TerminalLabel>Analyst explanation</TerminalLabel>
+              <p className={`text-sm leading-relaxed whitespace-pre-line ${tone.text} opacity-85`}>
+                {ai.explanation}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <TerminalLabel>Recommended action</TerminalLabel>
+              <p className={`border-l-2 pl-3 text-sm leading-relaxed ${tone.border} ${tone.text}`}>
+                {ai.recommended_action}
+              </p>
+            </div>
           </div>
         </div>
       )}
