@@ -20,6 +20,92 @@ const t = (s: unknown) =>
     // eslint-disable-next-line no-control-regex
     .replace(/[^\x09\x0A\x0D\x20-\xFF]/g, "");
 
+/**
+ * Draws the same world map as the web app (Natural Earth projection, world-atlas 110m) into a
+ * jsPDF page box at (x, y), and returns the server position [px, py] relative to (x, y).
+ */
+async function drawWorldMap(
+  doc: {
+    setFillColor: (...c: number[]) => unknown;
+    setDrawColor: (...c: number[]) => unknown;
+    setLineWidth: (w: number) => unknown;
+    lines: (
+      l: number[][],
+      x: number,
+      y: number,
+      s: number[],
+      style: string | null,
+      closed: boolean,
+    ) => unknown;
+  },
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  lat: number,
+  lon: number,
+): Promise<[number, number]> {
+  const [{ geoNaturalEarth1, geoPath, geoGraticule10 }, { feature }, world] = await Promise.all([
+    import("d3-geo"),
+    import("topojson-client"),
+    import("world-atlas/countries-110m.json"),
+  ]);
+  const topo = world.default as unknown as Parameters<typeof feature>[0];
+  const countryObject = (topo as { objects: Record<string, unknown> }).objects["countries"];
+  const countries = countryObject
+    ? (feature(topo, countryObject as never) as unknown as { features: unknown[] }).features
+    : [];
+
+  const proj = geoNaturalEarth1().fitExtent(
+    [
+      [0, 0],
+      [w, h],
+    ],
+    { type: "Sphere" },
+  );
+
+  // Collect the projected outline as separate subpaths, so the antimeridian cuts from d3 are kept.
+  type Sub = { pts: [number, number][]; closed: boolean };
+  const collect = (features: unknown): Sub[] => {
+    const subs: Sub[] = [];
+    let cur: Sub | null = null;
+    const ctx = {
+      moveTo(px: number, py: number) {
+        cur = { pts: [[px, py]], closed: false };
+        subs.push(cur);
+      },
+      lineTo(px: number, py: number) {
+        cur?.pts.push([px, py]);
+      },
+      closePath() {
+        if (cur) cur.closed = true;
+      },
+    };
+    const path = geoPath(proj, ctx as never);
+    path(features as never);
+    return subs;
+  };
+
+  const draw = (subs: Sub[], style: string | null, ox: number, oy: number) => {
+    for (const s of subs) {
+      if (s.pts.length < 2) continue;
+      const deltas = s.pts.slice(1).map((p, i) => [p[0] - s.pts[i]![0], p[1] - s.pts[i]![1]]);
+      doc.lines(deltas, ox + s.pts[0]![0], oy + s.pts[0]![1], [1, 1], style, s.closed);
+    }
+  };
+
+  // Graticule first, then country borders on top.
+  doc.setDrawColor(30, 41, 59);
+  doc.setLineWidth(0.3);
+  draw(collect(geoGraticule10()), "S", x, y);
+  doc.setDrawColor(71, 85, 105);
+  doc.setLineWidth(0.3);
+  draw(collect({ type: "FeatureCollection", features: countries }), "S", x, y);
+
+  const p = proj([lon, lat]);
+  return p ? [p[0], p[1]] : [w / 2, h / 2];
+}
+
 /** Formal incident report built only from evidence stored in the case. Browser-only. */
 export async function downloadPdfReport(r: InvestigationResult) {
   const { jsPDF } = await import("jspdf");
@@ -167,17 +253,12 @@ export async function downloadPdfReport(r: InvestigationResult) {
         y = M;
       }
       doc.setFillColor(8, 12, 24).rect(M, y, mapW, mapH, "F");
-      doc.setDrawColor(30, 41, 59).setLineWidth(0.5);
-      for (let i = 1; i < 12; i++) doc.line(M + (mapW * i) / 12, y, M + (mapW * i) / 12, y + mapH);
-      for (let i = 1; i < 6; i++) doc.line(M, y + (mapH * i) / 6, M + mapW, y + (mapH * i) / 6);
-      doc.setDrawColor(51, 65, 85).line(M, y + mapH / 2, M + mapW, y + mapH / 2);
-      const px = M + ((infra.longitude + 180) / 360) * mapW;
-      const py = y + ((90 - infra.latitude) / 180) * mapH;
-      doc.setFillColor(...color).circle(px, py, 5, "F");
+      const [px, py] = await drawWorldMap(doc, M, y, mapW, mapH, infra.latitude, infra.longitude);
+      doc.setFillColor(...color).circle(M + px, y + py, 5, "F");
       doc
         .setDrawColor(...color)
         .setLineWidth(1)
-        .circle(px, py, 10, "S");
+        .circle(M + px, y + py, 10, "S");
       doc
         .setFont("helvetica", "normal")
         .setFontSize(8)

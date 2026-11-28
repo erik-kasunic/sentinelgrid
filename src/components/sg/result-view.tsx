@@ -9,7 +9,6 @@ import { AiPanel } from "./ai-panel";
 import { Mono, Panel, TerminalLabel, VerdictBadge } from "./chrome";
 import { EvidencePanel } from "./evidence-panel";
 import { GraphPanel } from "./graph-panel";
-import { StreetMapPanel } from "./street-map-panel";
 import { InfraPanel } from "./infra-panel";
 import { GeoMapPanel } from "./geo-map-panel";
 import { FreshnessBanner } from "./freshness-banner";
@@ -176,8 +175,6 @@ export function ResultView({ result }: { result: InvestigationResult }) {
           )}
         </div>
       </div>
-
-      <StreetMapPanel infrastructure={result.infrastructure} />
     </div>
   );
 }

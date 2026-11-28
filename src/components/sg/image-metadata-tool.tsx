@@ -3,7 +3,6 @@ import { ImageUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { Panel } from "./chrome";
-import { StreetMapPanel } from "./street-map-panel";
 import { takePendingImage } from "@/lib/pending-image";
 import { cn } from "@/lib/utils";
 
@@ -242,14 +241,6 @@ export function ImageMetadataTool() {
                 );
               })}
             </div>
-          )}
-
-          {lat !== undefined && lon !== undefined && (
-            <StreetMapPanel
-              title="Where the photo was taken"
-              infrastructure={{ latitude: lat, longitude: lon }}
-              note="GPS position recorded by the camera. Metadata can be edited, so treat it as a lead, not proof."
-            />
           )}
 
           {Object.keys(meta).length > 0 && (
