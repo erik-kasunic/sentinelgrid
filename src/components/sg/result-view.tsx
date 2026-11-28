@@ -129,15 +129,13 @@ export function ResultView({ result }: { result: InvestigationResult }) {
         dimensions={result.dimensions}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch [&>section]:h-full">
         <AiPanel ai={result.ai} status={result.aiStatus} verdict={result.verdict} />
+        <EvidencePanel evidence={result.evidence} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <EvidencePanel evidence={result.evidence} />
-        <div className="space-y-6">
-          <ActionsPanel recommendations={result.recommendations} />
-        </div>
+        <ActionsPanel recommendations={result.recommendations} />
       </div>
 
       <GeoMapPanel infrastructure={result.infrastructure} />
