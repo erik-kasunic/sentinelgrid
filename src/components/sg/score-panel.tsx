@@ -44,7 +44,6 @@ export function ScorePanel({
     <Panel
       title="Risk assessment"
       tone={verdict === "critical" || verdict === "high" ? "danger" : "default"}
-      aside={<VerdictBadge verdict={verdict} size="lg" />}
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div>

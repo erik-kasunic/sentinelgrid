@@ -88,7 +88,6 @@ export function ResultView({ result }: { result: InvestigationResult }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <VerdictBadge verdict={result.verdict} size="lg" />
           <Button
             variant="outline"
             size="sm"
@@ -130,10 +129,11 @@ export function ResultView({ result }: { result: InvestigationResult }) {
         dimensions={result.dimensions}
       />
 
+      <AiPanel ai={result.ai} status={result.aiStatus} verdict={result.verdict} />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <EvidencePanel evidence={result.evidence} />
         <div className="space-y-6">
-          <AiPanel ai={result.ai} status={result.aiStatus} verdict={result.verdict} />
           <ActionsPanel recommendations={result.recommendations} />
         </div>
       </div>
