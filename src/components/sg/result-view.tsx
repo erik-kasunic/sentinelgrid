@@ -129,7 +129,9 @@ export function ResultView({ result }: { result: InvestigationResult }) {
         dimensions={result.dimensions}
       />
 
-      <AiPanel ai={result.ai} status={result.aiStatus} verdict={result.verdict} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AiPanel ai={result.ai} status={result.aiStatus} verdict={result.verdict} />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <EvidencePanel evidence={result.evidence} />
