@@ -33,7 +33,6 @@ function scoreLabel(band: Verdict) {
 export function ScorePanel({
   score,
   verdict,
-  dimensions,
 }: {
   score: RiskScore;
   verdict: Verdict;
@@ -130,25 +129,6 @@ export function ScorePanel({
                 ))}
               </ul>
             )}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <TerminalLabel>Risk dimensions</TerminalLabel>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {dimensions.map((dimension) => (
-              <div key={dimension.name} className="border border-border bg-background/50 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase">
-                    {dimension.name}
-                  </span>
-                  <VerdictBadge verdict={dimension.state} size="sm" />
-                </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  {dimension.note}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </div>

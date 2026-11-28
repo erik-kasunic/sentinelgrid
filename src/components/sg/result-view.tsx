@@ -18,7 +18,6 @@ import { ProviderPanel } from "./provider-panel";
 import { ScorePanel } from "./score-panel";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { downloadReport } from "@/lib/intel/report";
 import { storeLocalResult } from "@/lib/intel/result-store";
 import { TARGET_TYPE_LABEL, type InvestigationResult } from "@/lib/intel/types";
 import { saveInvestigation } from "@/lib/investigations.functions";
@@ -97,14 +96,6 @@ export function ResultView({ result }: { result: InvestigationResult }) {
             className="font-mono text-xs"
           >
             <Download className="size-3.5" /> Report (PDF)
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => downloadReport(result)}
-            className="font-mono text-xs text-muted-foreground"
-          >
-            Markdown
           </Button>
           {signedIn && caseId && <FolderPicker caseId={caseId} />}
           {signedIn ? (
