@@ -40,8 +40,6 @@ export function AiPanel({
         </EmptyState>
       ) : (
         <div className="space-y-5">
-          <p className={`text-sm leading-relaxed font-medium ${tone.text}`}>{ai.summary}</p>
-
           <div className="space-y-2">
             <TerminalLabel>Analyst explanation</TerminalLabel>
             <p className={`text-sm leading-relaxed whitespace-pre-line ${tone.text} opacity-85`}>
@@ -50,39 +48,10 @@ export function AiPanel({
           </div>
 
           <div className="space-y-2">
-            <TerminalLabel>In plain language</TerminalLabel>
-            <p className={`text-sm leading-relaxed ${tone.text} opacity-85`}>
-              {ai.simple_explanation}
-            </p>
-          </div>
-
-          <div className="space-y-2">
             <TerminalLabel>Recommended action</TerminalLabel>
             <p className={`border-l-2 pl-3 text-sm leading-relaxed ${tone.border} ${tone.text}`}>
               {ai.recommended_action}
             </p>
-          </div>
-
-          {ai.uncertainties.length > 0 && (
-            <div className="space-y-2">
-              <TerminalLabel>Uncertainties</TerminalLabel>
-              <ul className="space-y-1">
-                {ai.uncertainties.map((item) => (
-                  <li key={item} className="text-xs text-muted-foreground">
-                    <span className="mr-2 font-mono text-warning">?</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex items-center gap-3 border-t border-border/60 pt-3">
-            <span className="label-terminal">AI confidence</span>
-            <div className="h-1 w-28 bg-muted">
-              <div className="h-full bg-primary" style={{ width: `${ai.confidence}%` }} />
-            </div>
-            <span className="font-mono text-xs text-muted-foreground">{ai.confidence}%</span>
           </div>
         </div>
       )}
